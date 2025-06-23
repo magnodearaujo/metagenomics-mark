@@ -6,45 +6,6 @@ Resources:
     Type: AWS::CloudFormation::Macro
     Properties:
       Name: TU-Delft-Macro-Registration
-      FunctionName: !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:TU-Delft-Macro-Function'
+      #FunctionName: !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:TU-Delft-Macro-Function'
+      FunctionName: arn:aws:lambda:eu-central-1:752522825262:function:CountMacroFunction:CountMacroFunctionProductionVersion
       Description: Register TU Delft's Macro for use in CloudFormation templates
-
-  CountMacroFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: CountMacroFunction
-      Handler: index.process_count
-      Runtime: python3.11
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Code:
-        S3Bucket: tudelft-macro-resources
-        S3Key: tudelft-resources.zip
-      Timeout: 60
-
-  CountMacroFunctionVersion:
-    Type: AWS::Lambda::Version
-    Properties:
-      FunctionName: !Ref CountMacroFunction
-      Description: Version for CountMacroFunction
-
-  CountMacroFunctionAlias:
-    Type: AWS::Lambda::Alias
-    Properties:
-      FunctionName: !Ref CountMacroFunction
-      FunctionVersion: !GetAtt CountMacroFunctionVersion.Version
-      Name: CountMacroFunctionProductionVersion
-
-  CountMacroFunctionInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName: !Ref CountMacroFunction
-      Principal: cloudformation.amazonaws.com
-      SourceAccount: !Ref AWS::AccountId
-      Qualifier: !Ref CountMacroFunctionAlias
-
-  CountMacro:
-    Type: AWS::CloudFormation::Macro
-    Properties:
-      Name: CountMacro
-      FunctionName: !Ref CountMacroFunctionProductionVersion
