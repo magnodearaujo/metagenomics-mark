@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploys a Lambda macro to dynamically generate EC2 instances.
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EC2MacroLambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+
+  MacroFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: EC2MacroFunction
+      Handler: index.lambda_handler
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: metagenomicstest-mark     # <- Replace with your actual bucket
+        S3Key: macro_lambda.zip             # <- Ensure this zip contains the macro Lambda code
+      Timeout: 60
+
+  EC2InstanceMacro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Name: EC2InstanceMacro
+      FunctionName: !Ref MacroFunction
+
+Outputs:
+  MacroName:
+    Value: !Ref EC2InstanceMacro
+    Description: Name of the registered macro

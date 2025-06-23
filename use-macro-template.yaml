@@ -1,0 +1,14 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: EC2InstanceMacro
+
+Description: Stack that uses the EC2 macro to dynamically create EC2 instances
+
+Parameters:
+  InstanceCount:
+    Type: Number
+    Default: 2
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: genomics
+
+Resources: {}
