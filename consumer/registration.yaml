@@ -8,3 +8,10 @@ Resources:
       Name: TUCountMacro
       FunctionName: arn:aws:lambda:eu-central-1:752522825262:function:CountMacroFunction:CountMacroFunctionProductionVersion
       Description: Register TU Delft's Macro for use in CloudFormation templates
+  
+  TUMultiplyMacro:
+    Type: AWS::CloudFormation::Macro
+    Properties:
+      Name: TUMultiplyMacro
+      FunctionName: arn:aws:lambda:eu-central-1:752522825262:function:MultiplyMacroFunction
+      Description: Register TU Delft's Macro for use in CloudFormation templates
