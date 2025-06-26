@@ -53,6 +53,8 @@ Resources:
 - The macro works with any resource type that can be duplicated.
 -  Intrinsic functions (`!Ref`, `!Sub`, etc.) in properties are preserved and resolved by CloudFormation after macro processing. **This particularly means that you cannot use parameters for the `Count` value.**
 
+
+For a more elaborate real-life example see the [mvdb.yaml](mvdb.yaml) file. The count value is defined on line 120.
 ---
 
 For more advanced usage or troubleshooting, see the [provider README](../provider/README.md).
