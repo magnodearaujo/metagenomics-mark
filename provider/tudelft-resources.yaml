@@ -63,6 +63,27 @@ Resources:
       Principal: cloudformation.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
 
+  MultiplyMacroFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: MultiplyMacroFunction
+      Handler: multiplication.handler
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: tudelft-macro-resources
+        S3Key: !Sub tudelft-resources-${Timestamp}.zip
+      Timeout: 60
+      Description: !Sub "Force update ${Timestamp}"
+
+  MultiplyMacroFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt MultiplyMacroFunction.Arn
+      Principal: cloudformation.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
   
 Outputs:
   S3Key:
