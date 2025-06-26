@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Register TU Delft's Macro's. You only need to run this once in your account.
-Transform: TU-Delft-Macro-Registration
+Transform: TUCountMacro
 
 Resources:
   SQS:
