@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Creates an S3 bucket
+Description: Creates an AWS Lambda function that serves as a macro for multiplying resources in CloudFormation templates.
 
 Parameters:
   Timestamp:
@@ -8,11 +8,6 @@ Parameters:
     Description: Timestamp for the resources
 
 Resources:
-
-#   MyS3Bucket:
-#     Type: AWS::S3::Bucket
-#     Properties:
-#       BucketName: tudelft-macro-resources-${Timestamp}
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -29,11 +24,11 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AmazonEC2FullAccess
 
-  CountMacroFunction:
+  MultiplyTransformFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: CountMacroFunction
-      Handler: process_count.handler
+      FunctionName: MultiplyTransformFunction
+      Handler: multiplication.handler
       Runtime: python3.11
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
@@ -42,27 +37,13 @@ Resources:
       Timeout: 60
       Description: !Sub "Force update ${Timestamp}"
 
-  CountMacroFunctionVersion:
-    Type: AWS::Lambda::Version
-    Properties:
-      FunctionName: !Ref CountMacroFunction
-      Description: !Sub Version for CountMacroFunction ${Timestamp}
-
-  CountMacroFunctionAlias:
-    Type: AWS::Lambda::Alias
-    Properties:
-      FunctionName: !Ref CountMacroFunction
-      FunctionVersion: !GetAtt CountMacroFunctionVersion.Version
-      Name: CountMacroFunctionProductionVersion
-
-  CountMacroFunctionInvokePermission:
+  MultiplyTransformFunctionInvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !GetAtt CountMacroFunction.Arn
+      FunctionName: !GetAtt MultiplyTransformFunction.Arn
       Principal: cloudformation.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
-
   
 Outputs:
   S3Key:

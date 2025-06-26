@@ -2,9 +2,9 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Register TU Delft's Macro's. You only need to run this once in your account.
 
 Resources:
-  TUCountMacro:
+  TUMultiplyTransform:
     Type: AWS::CloudFormation::Macro
     Properties:
-      Name: TUCountMacro
-      FunctionName: arn:aws:lambda:eu-central-1:752522825262:function:CountMacroFunction:CountMacroFunctionProductionVersion
-      Description: Register TU Delft's Macro for use in CloudFormation templates
+      Name: TUMultiply
+      FunctionName: arn:aws:lambda:eu-central-1:752522825262:function:MultiplyTransformFunction
+      Description: Register TU Delft's Multiply transformation for use in CloudFormation templates

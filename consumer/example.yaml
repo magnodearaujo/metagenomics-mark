@@ -1,8 +1,26 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Register TU Delft's Macro's. You only need to run this once in your account.
-Transform: TUCountMacro
+Description: Example using the Multiply Macro to create multiple resources
+
+Parameters:
+  InstanceCount:
+    Type: Number
+    Description: Number of instances to create
+    Default: 4
 
 Resources:
+  Fn::Transform:
+    Name: TUMultiply
+    Parameters:
+      Multiply: !Ref InstanceCount
+      MultiplyKey: Instances
+
+  S3:
+    Type: AWS::S3::Bucket
+    MultiplyKey: Instances
+    Properties:
+      BucketName: "multitest-bucket-%d"
+
   SQS:
     Type: AWS::SQS::Queue
-    Count: 2
+    MultiplyKey: Instances
+    
