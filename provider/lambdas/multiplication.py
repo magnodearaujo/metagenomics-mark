@@ -4,12 +4,11 @@ import json
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
-def multiply_template(template, count, key, context=None):
+def multiply_template(template, count, key, placeholder, context=None):
     logger.info("Processing template to multiply resources based on 'Multiply' property...")
     logger.debug(f"Template type: {type(template)}, Template content: {template}")  
     logger.debug(f"Count: {count}")
     logger.debug(f"Context type: {type(context)}, Context content: {context}")
-
     new_template = {}
 
     for name, resource in template.items():
@@ -17,12 +16,16 @@ def multiply_template(template, count, key, context=None):
         logger.debug(f"MultiplyKey: {resource.get('MultiplyKey', 'Not specified')}")
         if 'MultiplyKey' in resource and resource['MultiplyKey'] == key:
             resource.pop('MultiplyKey')  # Remove MultiplyKey from the resource
-            resourcesAfterMultiplication = multiply(name, resource, count)
+            resourcesAfterMultiplication = multiply(name, resource, count, placeholder)
             if not set(resourcesAfterMultiplication.keys()) & set(new_template.keys()):
                 new_template.update(resourcesAfterMultiplication)
             else:
-                status = 'failed'
-                return status, template
+                status = 'failure'
+                return { 
+                    'status': status, 
+                    'template': template,
+                    'message': f"Resource '{name}' after multiplication conflicts with existing resources in the new template."
+                }
         else:
             logger.debug(f"Resource '{name}' does not match MultiplyKey '{key}', skipping multiplication.")
             if name not in new_template:
@@ -32,43 +35,48 @@ def multiply_template(template, count, key, context=None):
                 new_template[name] = resource.copy()
             else:
                 logger.warning(f"Resource '{name}' already exists in the new template, failing template to avoid duplication.")
-                status = 'failed'
-                return status, template
+                status = 'failure'
+                return { 
+                    'status': status,
+                    'template': template,
+                    'message': f"Resource '{name}' already exists in the new template, failing to avoid duplication." 
+                }
         
     return_status = 'success'
     logger.debug(f"New template after processing: {new_template}")
     return_fragment = new_template
     #return_fragment = template
 
-    return return_status, return_fragment
+    return { 'status': return_status, 'template': return_fragment }
 
-def multiply(resource_name, resource_structure, count):
+def multiply(resource_name, resource_structure, count, placeholder):
     resources = {}
     logger.info(f"Multiplying resource '{resource_name}' {count} times.")
     #Loop according to the number of times we want to multiply, creating a new resource each time
     for iteration in range(1, (count + 1)):
         logger.debug(f"Iteration {iteration}: Processing resource '{resource_name}' with content: {resource_structure}")
-        multipliedResourceStructure = update_placeholder(resource_structure,iteration)
+        multipliedResourceStructure = update_placeholder(resource_structure,iteration, placeholder)
         resources[resource_name+str(iteration)] = multipliedResourceStructure
     return resources
 
-def update_placeholder(resource_structure, iteration):
-    #Convert the json into a string
-    resourceString = json.dumps(resource_structure)
-    #Count the number of times the placeholder is found in the string
-    placeHolderCount = resourceString.count('%d')
-
-    #If the placeholder is found then replace it
-    if placeHolderCount > 0:
-        logger.debug(f"Found {placeHolderCount} occurrences of decimal placeholder in JSON, replacing with iterator value {iteration}")
-        #Make a list of the values that we will use to replace the decimal placeholders - the values will all be the same
-        placeHolderReplacementValues = [iteration] * placeHolderCount
-        #Replace the decimal placeholders using the list - the syntax below expands the list
-        resourceString = resourceString % (*placeHolderReplacementValues,)
-        #Convert the string back to json and return it
-        return json.loads(resourceString)
+def update_placeholder(resource_structure, iteration, placeholder='%d'):
+    """
+    Recursively replace all occurrences of `placeholder` in both keys and values within obj with the string value of iteration.
+    Works for dicts, lists, and strings.
+    """
+    if isinstance(resource_structure, dict):
+        new_dict = {}
+        for k, v in resource_structure.items():
+            # Replace in key
+            new_key = k.replace(placeholder, str(iteration)) if isinstance(k, str) else k
+            # Replace in value (recursive)
+            new_dict[new_key] = update_placeholder(v, iteration, placeholder)
+        return new_dict
+    elif isinstance(resource_structure, list):
+        return [update_placeholder(item, iteration, placeholder) for item in resource_structure]
+    elif isinstance(resource_structure, str):
+        return resource_structure.replace(placeholder, str(iteration))
     else:
-        logger.debug("No occurrences of decimal placeholder found in JSON, therefore nothing will be replaced")
         return resource_structure
 
 def handler(event, context):
@@ -78,13 +86,20 @@ def handler(event, context):
     multiply_value = event.get('params', {}).get('Multiply', 1)
     logger.debug(f"Multiply value extracted: {multiply_value}")
     multiply_key = event.get('params').get('MultiplyKey')
+    placeholder = event.get('params', {}).get('Placeholder', '%d')
     count = int(multiply_value)
     logger.debug(f"Count for multiplication: {count}")
-    result = multiply_template(event['fragment'], count, multiply_key, context)
+    result = multiply_template(event['fragment'], count, multiply_key, placeholder, context)
 
     print(f"Returning result: {result}")
-    return {
+    returnvalue = {
         'requestId': event['requestId'],
-        'status': result[0],
-        'fragment': result[1],
+        'status': result['status'],
+        'fragment': result['template'],
     }
+    if 'message' in result:
+        returnvalue['message'] = result['message']
+
+    logger.debug(f"Final returning value: {returnvalue}")
+
+    return returnvalue
