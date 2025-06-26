@@ -9,13 +9,9 @@ This repository contains tools and macros for advanced AWS CloudFormation templa
 
 ## Directory Structure
 
-- [provider/README.md](provider/README.md) — How to deploy and register the TUMultiply macro in your AWS account.
-- [consumer/README.md](consumer/README.md) — How to use the TUMultiply macro in your CloudFormation templates, with examples.
+- [provider/README.MD](provider/README.MD) — How to deploy and register the TUMultiply macro in your AWS account.
+- [consumer/README.MD](consumer/README.MD) — How to use the TUMultiply macro in your CloudFormation templates, with examples.
 
-## Quick Links
-
-- [Provider Documentation](provider/README.md)
-- [Consumer Documentation](consumer/README.md)
 
 ---
 
