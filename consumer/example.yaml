@@ -8,17 +8,18 @@ Parameters:
     Default: 4
 
 Resources:
+  Fn::Transform:
+    Name: TUMultiply
+    Parameters:
+      Multiply: !Ref InstanceCount
+      MultiplyKey: Instances
+
   S3:
     Type: AWS::S3::Bucket
     MultiplyKey: Instances
     Properties:
-      BucketName: "multitest-%d-bucket"
+      BucketName: "multitest-bucket-%d"
 
-  Fn::Transform:
-    Name: TUMultiplyMacro
-    Parameters:
-      Multiply: !Ref InstanceCount
-      MultiplyKey: Instances
   SQS:
     Type: AWS::SQS::Queue
     MultiplyKey: Instances

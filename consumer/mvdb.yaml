@@ -1,6 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Create N Linux instances with password-based SSH access for 'clouduser'
-Transform: TUCountMacro
 
 Parameters:
   KeyName:
@@ -21,6 +20,12 @@ Parameters:
     Default: t3.large
 
 Resources:
+  Fn::Transform:
+    Name: TUMultiplyMacro
+    Parameters:
+      Multiply: !Ref InstanceCount
+      MultiplyKey: Instances
+
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -117,7 +122,7 @@ Resources:
                 Resource: "*"
 
   VMachine:
-    Count: 2
+    MultiplyKey: Instances
     Type: AWS::EC2::Instance
     Properties:
       ImageId: !Ref AmiId
@@ -143,7 +148,10 @@ Resources:
           pwd
           git clone https://gitlab.tudelft.nl/mschenk/metagenomics-lab
           cd metagenomics-lab/installation
-          ./install.sh          
+          ./install.sh   
+      Tags:
+        - Key: Name
+          Value: !Sub "Machine %d of ${InstanceCount}"
 Outputs:
   VpcId:
     Description: VPC ID
