@@ -33,8 +33,8 @@ Resources:
   Fn::Transform:
     Name: TUMultiply
     Parameters:
-      Multiply: !Ref InstanceCount
       MultiplyKey: Instances
+      Multiply: !Ref InstanceCount
 
   SQS:
     Type: AWS::SQS::Queue
@@ -50,12 +50,12 @@ Resources:
   Fn::Transform:
     Name: TUMultiply
     Parameters:
-      Multiply:
-        - !Ref InstanceCount
-        - 3
       MultiplyKey:
         - Instances
         - Tester
+      Multiply:
+        - !Ref InstanceCount
+        - 3
 
   SQS:
     Type: AWS::SQS::Queue
