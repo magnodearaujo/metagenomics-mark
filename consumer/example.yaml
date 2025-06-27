@@ -1,0 +1,36 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Example using the Multiply Macro to create multiple resources
+
+Parameters:
+  InstanceCount:
+    Type: Number
+    Description: Number of instances to create
+    Default: 4
+
+Resources:
+  Fn::Transform:
+    Name: TUMultiply
+    Parameters:
+      MultiplyKey: 
+      - Instances
+      - Tester
+      Multiply: 
+      - !Ref InstanceCount
+      - 3
+      
+  S3:
+    Type: AWS::S3::Bucket
+    MultiplyKey: Instances
+    Properties:
+      BucketName: "multitest-bucket-%d"
+
+  TS3:
+    Type: AWS::S3::Bucket
+    MultiplyKey: Tester
+    Properties:
+      BucketName: "multitest-bucket-%d-tester"
+
+  # SQS:
+  #   Type: AWS::SQS::Queue
+  #   MultiplyKey: Instances
+    
