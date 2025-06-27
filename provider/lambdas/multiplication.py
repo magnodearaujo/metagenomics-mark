@@ -5,24 +5,18 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 def multiply_template(template, count, key, placeholder, context=None):
-    logger.info("Processing template to multiply resources based on 'Multiply' property...")
-    logger.debug(f"Template type: {type(template)}, Template content: {template}")  
-    logger.debug(f"Count: {count}")
-    logger.debug(f"Context type: {type(context)}, Context content: {context}")
-    new_template = {}
 
+    new_template = {}
     for name, resource in template.items():
-        logger.debug(f"Processing resource '{name}' with content: {resource}")   
-        logger.debug(f"MultiplyKey: {resource.get('MultiplyKey', 'Not specified')}")
         if 'MultiplyKey' in resource and resource['MultiplyKey'] == key:
+            logger.debug(f"Multiplying resource '{name}' with content: {resource}")   
             resource.pop('MultiplyKey')  # Remove MultiplyKey from the resource
             resourcesAfterMultiplication = multiply(name, resource, count, placeholder)
             if not set(resourcesAfterMultiplication.keys()) & set(new_template.keys()):
                 new_template.update(resourcesAfterMultiplication)
             else:
-                status = 'failure'
                 return { 
-                    'status': status, 
+                    'status': 'failure',
                     'template': template,
                     'message': f"Resource '{name}' after multiplication conflicts with existing resources in the new template."
                 }
@@ -30,24 +24,19 @@ def multiply_template(template, count, key, placeholder, context=None):
             logger.debug(f"Resource '{name}' does not match MultiplyKey '{key}', skipping multiplication.")
             if name not in new_template:
                 # If the resource does not match the MultiplyKey, just copy it as is
-                logger.debug(f"Copying resource '{name}' without multiplication.")
-                # Copy the resource without modification
                 new_template[name] = resource.copy()
             else:
                 logger.warning(f"Resource '{name}' already exists in the new template, failing template to avoid duplication.")
-                status = 'failure'
                 return { 
-                    'status': status,
+                    'status': 'failure',
                     'template': template,
-                    'message': f"Resource '{name}' already exists in the new template, failing to avoid duplication." 
+                    'message': f"Resource '{name}' already exists in the new template, failing due to duplication." 
                 }
         
-    return_status = 'success'
-    logger.debug(f"New template after processing: {new_template}")
+    logger.debug(f"New template after processing: {json.dumps(new_template, indent=2)}")
     return_fragment = new_template
-    #return_fragment = template
 
-    return { 'status': return_status, 'template': return_fragment }
+    return { 'status': 'success', 'template': return_fragment }
 
 def multiply(resource_name, resource_structure, count, placeholder):
     resources = {}
@@ -79,19 +68,107 @@ def update_placeholder(resource_structure, iteration, placeholder='%d'):
     else:
         return resource_structure
 
-def handler(event, context):
-    print(f"Received event: {json.dumps(event, indent=2)} ")
-    print(f"Context: {context}")
-          
-    multiply_value = event.get('params', {}).get('Multiply', 1)
-    logger.debug(f"Multiply value extracted: {multiply_value}")
-    multiply_key = event.get('params').get('MultiplyKey')
-    placeholder = event.get('params', {}).get('Placeholder', '%d')
-    count = int(multiply_value)
-    logger.debug(f"Count for multiplication: {count}")
-    result = multiply_template(event['fragment'], count, multiply_key, placeholder, context)
+def parse_params(event):
+    """
+    Parses multiplication parameters from the event.
 
-    print(f"Returning result: {result}")
+    Args:
+        event (dict): The event dictionary containing parameters.
+
+    Returns:
+        dict: On success, returns worklist, where worklist is a list of dicts with keys 'key', 'count', and 'placeholder'.
+
+    Raises:
+        ValueError: If the parameters are not in the expected format or types.
+    """
+    logger.debug("Handling parameters")
+    
+    multiply_key = event.get('params', {}).get('MultiplyKey')
+    logger.debug(f"MultiplyKey extracted: {type(multiply_key)}: {multiply_key}")
+
+    multiply_count = event.get('params', {}).get('Multiply')
+    logger.debug(f"Multiply extracted: {type(multiply_count)}: {multiply_count}")
+
+    placeholder = event.get('params', {}).get('Placeholder', '%d')
+    logger.debug(f"Placeholder extracted: {type(placeholder)}: {placeholder}")
+
+    if isinstance(multiply_key, str):
+        logger.debug("Processing single value arguments")
+
+        try:
+            multiply_count = int(multiply_count)
+        except TypeError as e:
+            logger.error(f"Multiply should be an integer: {e}")
+            raise ValueError(f"Multiply should be an integer: {e}")
+
+        if not isinstance(multiply_count, int):
+            logger.error(f"Multiply should be an integer, got {type(multiply_count)}: {multiply_count}")
+            raise ValueError(f"Multiply should be an integer, got {type(multiply_count)}: {multiply_count}")
+            
+        if isinstance(placeholder, list):
+            logger.error(f"Placeholder should be a string, got {type(placeholder)}: {placeholder}")
+            raise ValueError(f"Placeholder should be a string, got {type(placeholder)}: {placeholder}")        
+        
+        worklist = [ { 'key': multiply_key, 'count': multiply_count, 'placeholder': placeholder } ]
+        logger.debug(f"Worklist created from single argument: {worklist}")
+    elif isinstance(multiply_key, list):
+        logger.debug("Processing list value arguments")
+
+        if not isinstance(multiply_count, list):
+            logger.error(f"Multiply should be a list, got {type(multiply_count)}: {multiply_count}")
+            raise ValueError(f"Multiply should be a list, got {type(multiply_count)}: {multiply_count}")
+        
+        try:
+            multiply_count = [int(count) for count in multiply_count]  # Ensure all counts are integers
+        except TypeError as e:
+            logger.error(f"Multiply list contains non-integer values: {e}")
+            raise ValueError(f"Multiply list contains non-integer values: {e}")
+        
+        if not isinstance(placeholder, list):
+            placeholder = [placeholder] * len(multiply_key)
+
+        if len(multiply_key) != len(multiply_count) or len(multiply_key) != len(placeholder):
+            logger.error("MultiplyKey, Multiply, and Placeholder lists must be of the same length.")
+            raise ValueError("MultiplyKey, Multiply, and Placeholder lists must be of the same length.")
+        
+        keys = ['key', 'count', 'placeholder']
+        worklist = [dict(zip(keys, values)) for values in zip(multiply_key, multiply_count, placeholder)]
+        logger.debug(f"Worklist created from list arguments: {worklist}")
+    else: 
+        logger.error(f"Unexpected type for MultiplyKey: {type(multiply_key)}")
+        raise ValueError(f"Unexpected type for MultiplyKey: {type(multiply_key)}")
+    
+    logger.debug("Done handling parameters")
+    return worklist
+
+def handler(event, context):
+    logger.debug(f"Received event: {json.dumps(event, indent=2)} ")
+    logger.debug(f"Context: {context}")
+    
+    try:
+        worklist = parse_params(event)
+    except ValueError as e:
+        logger.error(f"Error parsing parameters: {e}")
+        return {
+            'requestId': event.get('requestId', 'unknown'),
+            'status': 'failure',
+            'message': str(e)
+        }
+    logger.debug(f"Worklist created: {worklist}")
+
+    fragment = event.get('fragment', {}).copy()
+    for item in worklist:
+        logger.debug(f"Main replacement iteration: {item}")
+        result = multiply_template(fragment, item['count'], item['key'], item['placeholder'], context)
+        if result['status'] == 'failure':
+            logger.error(f"Error during multiplication: {result.get('message', 'Unknown error')}")
+            return {
+                'requestId': event.get('requestId', 'unknown'),
+                'status': 'failure',
+                'message': result.get('message', 'Unknown error')
+            }
+        fragment = result['template']
+
     returnvalue = {
         'requestId': event['requestId'],
         'status': result['status'],
@@ -100,6 +177,6 @@ def handler(event, context):
     if 'message' in result:
         returnvalue['message'] = result['message']
 
-    logger.debug(f"Final returning value: {returnvalue}")
+    logger.info(f"Final returning value: {json.dumps(returnvalue, indent=2)}")
 
     return returnvalue

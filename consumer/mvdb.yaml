@@ -21,7 +21,7 @@ Parameters:
 
 Resources:
   Fn::Transform:
-    Name: TUMultiplyMacro
+    Name: TUMultiply
     Parameters:
       Multiply: !Ref InstanceCount
       MultiplyKey: Instances

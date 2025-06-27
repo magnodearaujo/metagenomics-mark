@@ -44,6 +44,12 @@ Resources:
       FunctionName: !GetAtt MultiplyTransformFunction.Arn
       Principal: cloudformation.amazonaws.com
       SourceAccount: !Ref AWS::AccountId
+
+  MultiplyLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/MultiplyTransformFunction
+      RetentionInDays: 60
   
 Outputs:
   S3Key:
