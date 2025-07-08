@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates an AWS Lambda function that serves as a macro for multiplying resources in CloudFormation templates.
+
+Parameters:
+  Timestamp:
+    Type: String
+    Default: '2025-06-23-16-47'
+    Description: Timestamp for the resources
+
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EC2MacroLambdaRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonEC2FullAccess
+
+  MultiplyTransformFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: MultiplyTransformFunction
+      Handler: multiplication.handler
+      Runtime: python3.11
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        S3Bucket: tudelft-macro-resources
+        S3Key: !Sub tudelft-resources-${Timestamp}.zip
+      Timeout: 60
+      Description: !Sub "Force update ${Timestamp}"
+
+  MultiplyTransformFunctionInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt MultiplyTransformFunction.Arn
+      Principal: cloudformation.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+  MultiplyLambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/MultiplyTransformFunction
+      RetentionInDays: 60
+  
+Outputs:
+  S3Key:
+    Value: !Sub 'tudelft-resources-${Timestamp}.zip'
+    Description: S3 key for the resources zip file
