@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowS3AccessFromAccount",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::842609633633:root"
+      },
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject"
+      ],
+      "Resource": "arn:aws:s3:::tudelft-macro-resources-provider-bucket/*"
+    },
+    {
+      "Sid": "AllowListBucketFromAccount",
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::842609633633:root"
+      },
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::tudelft-macro-resources-provider-bucket"
+    }
+  ]
+}
+

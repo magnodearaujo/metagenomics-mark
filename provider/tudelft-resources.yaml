@@ -32,7 +32,7 @@ Resources:
       Runtime: python3.11
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
-        S3Bucket: tudelft-macro-resources
+        S3Bucket: tudelft-macro-resources-provider-bucket
         S3Key: !Sub tudelft-resources-${Timestamp}.zip
       Timeout: 60
       Description: !Sub "Force update ${Timestamp}"
