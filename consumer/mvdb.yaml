@@ -1,14 +1,22 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: Create N Linux instances with password-based SSH access for 'clouduser'
 
+Transform:
+  Name: TUMultiply
+  Parameters:
+    Multiply: !Ref InstanceCount
+    MultiplyKey: Instances
+
 Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: EC2 KeyPair for fallback SSH access
     Default: genomics
+
   AmiId:
     Type: AWS::EC2::Image::Id
     Default: ami-01179af425b2ee025  # Ubuntu 22.04 (for eu-central-1)
+
   InstanceCount:
     Type: Number
     Description: Number of instances to create
@@ -20,12 +28,6 @@ Parameters:
     Default: t3.large
 
 Resources:
-  Fn::Transform:
-    Name: TUMultiply
-    Parameters:
-      Multiply: !Ref InstanceCount
-      MultiplyKey: Instances
-
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -94,12 +96,6 @@ Resources:
         - Key: Name
           Value: SSHAccessSecurityGroup
 
-  Ec2InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Roles:
-        - !Ref Ec2Role
-
   Ec2Role:
     Type: AWS::IAM::Role
     Properties:
@@ -120,6 +116,12 @@ Resources:
                 Action:
                   - ec2:CreateTags
                 Resource: "*"
+
+  Ec2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref Ec2Role
 
   VMachine:
     MultiplyKey: Instances
@@ -144,14 +146,14 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-
           pwd
           git clone https://gitlab.tudelft.nl/mschenk/metagenomics-lab
           cd metagenomics-lab/installation
-          ./install.sh   
+          ./install.sh
       Tags:
         - Key: Name
           Value: !Sub "Machine %d of ${InstanceCount}"
+
 Outputs:
   VpcId:
     Description: VPC ID
@@ -163,4 +165,4 @@ Outputs:
 
   SecurityGroupId:
     Description: Security Group ID
-    Value: !Ref InstanceSecurityGroup  
+    Value: !Ref InstanceSecurityGroup
